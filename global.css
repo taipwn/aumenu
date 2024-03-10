@@ -1,0 +1,64 @@
+/* Global CSS styles */
+body {
+    background-color: #222;
+    color: #fff;
+    font-family: 'Arial', cursive;
+    margin: 0;
+    padding: 0;
+}
+
+.top-bar {
+    background-color: #333;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    text-align: center;
+}
+
+.logo {
+    width: 100px;
+    height: auto;
+    margin-top: 10px;
+}
+
+.categories {
+    padding: 40px 0;
+}
+
+.category {
+    display: inline-block;
+    margin: 0 60px;
+    font-size: 18px;
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.category:hover {
+    color: #ccc;
+}
+
+.content {
+    padding: 240px 20px 20px; /* Increased padding for more content */
+}
+
+.section {
+    margin-bottom: 40px;
+}
+
+.section h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.section p {
+    line-height: 1.6;
+}
+
+.section img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+}

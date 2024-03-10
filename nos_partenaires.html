@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nos Partenaires</title>
+    <link rel="stylesheet" href="global.css"> <!-- Link to global CSS -->
+    <style>
+        /* Additional styles specific to the Nos Partenaires page */
+        .content {
+            margin-top: 10px; /* Add some margin to separate the header from the content */
+        }
+
+        .top-bar {
+            height: 100px; /* Adjust the height of the top bar */
+            margin-bottom: 10px; /* Add margin below the top bar */
+        }
+
+        #alphabetNav {
+            padding: 10px;
+            background-color: #222;
+            border-right: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Stretch items to fill container */
+            justify-content: space-between; /* Equal spacing between items */
+            position: fixed;
+            top: 100px; /* Adjust top position to start below the header */
+            left: 0;
+            bottom: 0;
+            z-index: 1;
+            overflow-y: auto;
+            width: 50px; /* Adjust width of the alphabet sidebar */
+        }
+
+        #rowList {
+            padding: 10px;
+            flex: 1;
+            margin-left: 150px; /* Adjust margin to account for the fixed sidebar */
+        }
+
+        .restaurant {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+
+        .restaurant img {
+            width: 300px; /* Make the image much bigger */
+            height: auto;
+            margin: 20px auto; /* Center the image horizontally */
+            display: block; /* Ensure the image is centered */
+        }
+
+        .restaurant-info {
+            flex: 1;
+        }
+
+        .restaurant-info span:not(:first-child) {
+            display: block;
+            font-size: 1em; /* Keep other elements at normal size */
+        }
+
+        .restaurant-info span:first-child {
+            display: block;
+            font-size: 3em; /* Make restaurant names 3x bigger */
+            font-weight: bold; /* Add bold style to restaurant names */
+        }
+    </style>
+</head>
+<body>
+    <!-- Top bar -->
+    <div class="top-bar">
+        <nav class="categories">
+            <a href="accueil.html" class="category">Accueil</a>
+            <a href="nos_partenaires.html" class="category">Nos Partenaires</a>
+            <a href="carte.html" class="category">Carte</a> <!-- Updated section 3 button -->
+            <!-- Add other navigation links as needed -->
+        </nav>
+    </div>
+
+    <div class="content">
+        <!-- Restaurant list section -->
+        <div id="container">
+            <div id="alphabetNav"></div>
+            <div id="rowList"></div>
+        </div>
+    </div>
+
+    <!-- Script to extract restaurant data from XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script>
+        function extractRowsFromXLSX() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'rest.xlsx', true);
+            xhr.responseType = 'arraybuffer';
+
+            xhr.onload = function() {
+                const data = new Uint8Array(xhr.response);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                const alphabetNav = document.getElementById('alphabetNav');
+                const rowList = document.getElementById('rowList');
+                let prevFirstLetter = '';
+
+                jsonData.sort((a, b) => a.Nom.localeCompare(b.Nom)); // Sort by restaurant names
+
+                jsonData.forEach(rowData => {
+                    const firstLetter = rowData.Nom.charAt(0).toUpperCase();
+                    if (firstLetter !== prevFirstLetter) {
+                        const letterDiv = document.createElement('div'); // Create a div for each letter
+                        letterDiv.textContent = firstLetter;
+                        letterDiv.classList.add('letter');
+                        letterDiv.addEventListener('click', () => {
+                            const restaurantId = `restaurant-${firstLetter}`;
+                            const restaurantElement = document.getElementById(restaurantId);
+                            if (restaurantElement) {
+                                const offset = document.getElementById('alphabetNav').offsetWidth;
+                                window.scrollTo({
+                                    top: restaurantElement.offsetTop - offset,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        });
+                        alphabetNav.appendChild(letterDiv);
+                        prevFirstLetter = firstLetter;
+                    }
+
+                    const restaurantDiv = document.createElement('div');
+                    restaurantDiv.classList.add('restaurant');
+                    restaurantDiv.id = `restaurant-${firstLetter}`;
+
+                    const restaurantInfo = document.createElement('div');
+                    restaurantInfo.classList.add('restaurant-info');
+                    restaurantInfo.innerHTML = `
+                        <span style="font-size: 3em; font-weight: bold;">${rowData.Nom}</span>
+                        <span>${rowData['Rue N°'] ? rowData['Rue N°'] + ', ' : ''}${rowData.Lieu || ''}</span>
+                        ${rowData.Téléphone ? `<span><a href="tel:+41${rowData.Téléphone}" target="_blank">${rowData.Téléphone}</a></span>` : ''}
+                        ${rowData.Lien ? `<span><a href="https://${rowData.Lien}" target="_blank">${rowData.Lien}</a></span>` : ''}
+                        ${rowData.Mail ? `<span><a href="mailto:${rowData.Mail}">${rowData.Mail}</a></span>` : ''}
+                        <span>${rowData.Contact || ''}</span>
+                    `;
+                    restaurantDiv.appendChild(restaurantInfo);
+
+                    const restaurantImg = document.createElement('img');
+                    restaurantImg.src = rowData.Image ? rowData.Image : 'placeholder.jpg'; // Placeholder image URL
+                    restaurantDiv.appendChild(restaurantImg);
+
+                    rowList.appendChild(restaurantDiv);
+                });
+            };
+
+            xhr.send();
+        }
+
+        // Automatically extract rows when the page loads
+        extractRowsFromXLSX();
+    </script>
+</body>
+</html>

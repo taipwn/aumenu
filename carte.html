@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map</title>
+    <link rel="stylesheet" href="global.css"> <!-- Link to global CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Additional styles specific to this page can be added here */
+        .top-bar {
+            margin-bottom: 20px; /* Add space below the top bar */
+        }
+
+        #map-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #map {
+            height: 480px; /* Adjust the height as needed */
+            width: 100%; /* Make the map fill the width of the container */
+            margin-bottom: 20px; /* Add space below the map */
+        }
+
+        #search-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #location-input {
+            width: calc(100% - 100px); /* Adjust input width */
+            margin-bottom: 10px;
+        }
+
+        #radius-slider-container {
+            width: 100px; /* Adjust slider width */
+        }
+
+        #slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        #current-radius {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        #locations {
+            list-style-type: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none; /* Initially hide the dropdown */
+        }
+
+        #locations li {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        #locations li:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+    <nav class="categories">
+        <a href="accueil.html" class="category">Accueil</a>
+        <a href="nos_partenaires.html" class="category">Nos Partenaires</a>
+        <a href="carte.html" class="category">Carte</a> <!-- Updated section 3 button -->
+        <!-- Add other navigation links as needed -->
+    </nav>
+</div>
+
+<div id="map-container">
+    <div id="map"></div>
+    <div id="search-container">
+        <input type="text" id="location-input" list="locations" placeholder="Enter ZIP code or address">
+        <button onclick="locate()">Locate</button> <!-- Button to trigger locating -->
+        <ul id="locations"></ul> <!-- Dropdown list for suggestions -->
+        <div id="radius-slider-container">
+            <div id="slider-labels">
+                <span>0 km</span>
+                <span>50 km</span>
+            </div>
+            <input type="range" min="0" max="50" value="25" id="radius-slider"> <!-- Slider for radius -->
+            <div id="current-radius">Radius: 25 km</div>
+        </div>
+    </div>
+</div>
+
+<!-- Script to extract restaurant data from XLSX and add markers to the map -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([46.8182, 8.2275], 8); // Default center of Switzerland
+    var marker;
+    var circle;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    function locate() {
+        var selectedLocation = document.getElementById('location-input').value.trim().replace(/,/g, "");
+        if (selectedLocation === "") {
+            alert("Please enter a ZIP code or address.");
+            return;
+        }
+
+        // Use OpenStreetMap Nominatim API for geocoding
+        fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(selectedLocation) + "&countrycodes=CH")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not OK");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.length > 0) {
+                    var lat = parseFloat(data[0].lat);
+                    var lon = parseFloat(data[0].lon);
+                    map.setView([lat, lon], 13); // Center the map on the provided coordinates
+
+                    // Remove previous marker and circle
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+                    if (circle) {
+                        map.removeLayer(circle);
+                    }
+
+                    marker = L.marker([lat, lon]).addTo(map);
+                    marker.bindPopup("Location: " + selectedLocation).openPopup();
+
+                    // Show the radius slider after selecting an address
+                    document.getElementById('radius-slider-container').style.display = 'block';
+                } else {
+                    alert("Location not found. Please enter a valid ZIP code or address.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while locating. Please try again.");
+            });
+    }
+
+    // Automatically close the dropdown when clicking outside of it
+    window.addEventListener('click', function(event) {
+        var locationsList = document.getElementById('locations');
+        if (!event.target.matches('#location-input') && !event.target.matches('#locations li')) {
+            locationsList.style.display = "none";
+        }
+    });
+
+    // Event listener for input field to fetch suggestions and update the dropdown list
+    var locationsInput = document.getElementById('location-input');
+    locationsInput.addEventListener('input', function() {
+        var query = this.value.trim();
+        if (query === "") {
+            document.getElementById('locations').style.display = "none";
+            return;
+        }
+        fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(query) + "&countrycodes=CH")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not OK");
+                }
+                return response.json();
+            })
+            .then(data => {
+                var datalist = document.getElementById('locations');
+                datalist.innerHTML = ""; // Clear previous suggestions
+                data.forEach(item => {
+                    var option = document.createElement('li');
+                    option.textContent = item.display_name;
+                    option.setAttribute('data-lat', item.lat);
+                    option.setAttribute('data-lon', item.lon);
+                    option.addEventListener('click', function() {
+                        locationsInput.value = this.textContent; // Update input field with selected address
+                        var lat = parseFloat(this.getAttribute('data-lat'));
+                        var lon = parseFloat(this.getAttribute('data-lon'));
+                        map.setView([lat, lon], 13); // Center the map on the selected coordinates
+
+                        // Remove previous marker and circle
+                        if (marker) {
+                            map.removeLayer(marker);
+                        }
+                        if (circle) {
+                            map.removeLayer(circle);
+                        }
+
+                        marker = L.marker([lat, lon]).addTo(map);
+                        marker.bindPopup("Location: " + this.textContent).openPopup();
+
+                        // Hide the dropdown after selecting an address
+                        datalist.style.display = "none";
+
+                        // Show the radius slider after selecting an address
+                        document.getElementById('radius-slider-container').style.display = 'block';
+                    });
+                    datalist.appendChild(option);
+                });
+                // Show the dropdown after receiving suggestions
+                datalist.style.display = "block";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    });
+
+    // Event listener for radius slider to update circle radius
+    var radiusSlider = document.getElementById('radius-slider');
+    var currentRadiusDisplay = document.getElementById('current-radius');
+    radiusSlider.addEventListener('input', function() {
+        var radius = parseInt(this.value); // Get the value of the slider
+        currentRadiusDisplay.textContent = "Radius: " + radius + " km";
+        if (marker) {
+            if (circle) {
+                map.removeLayer(circle);
+            }
+            circle = L.circle(marker.getLatLng(), {
+                color: 'lightblue',
+                fillColor: 'lightblue',
+                fillOpacity: 0.3,
+                radius: radius * 1000 // Convert radius from kilometers to meters
+            }).addTo(map);
+            map.fitBounds(circle.getBounds()); // Adjust map view to fit the circle
+        }
+    });
+</script>
+
+</body>
+</html>
