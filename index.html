@@ -5,27 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
     <link rel="stylesheet" href="global.css"> <!-- Link to global CSS -->
+    <style>
+        /* Additional styles for the top bar */
+        .top-bar {
+            height: 100px; /* Adjust the height of the top bar */
+            margin-bottom: 20px; /* Increase margin below the top bar */
+        }
+        
+        /* Styles for the calendar widget */
+        .calendar-widget {
+            position: fixed;
+            top: 220px; /* Adjust top position to start below the top bar */
+            left: 20px;
+            width: 200px;
+            background-color: #222; /* Background color */
+            color: #fff; /* Text color */
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: block; /* Make the calendar widget always visible */
+        }
+        
+        .calendar-date {
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        
+        .calendar-date:hover {
+            background-color: #444; /* Hover color */
+        }
+        
+        .selected-date {
+            font-weight: bold;
+            font-size: 48px; /* Make the selected date twice as big */
+            margin-top: 100px; /* Add some space above the selected date */
+            margin-bottom: 20px; /* Add some space below the selected date */
+        }
+    </style>
 </head>
 <body>
     <!-- Top bar -->
     <div class="top-bar">
         <nav class="categories">
-            <a href="accueil.html" class="category">Accueil</a>
+            <a href="index.html" class="category">Accueil</a>
             <a href="nos_partenaires.html" class="category">Nos Partenaires</a>
-            <a href="carte.html" class="category">Carte</a> <!-- Updated section 3 button -->
+            <a href="carte.html" class="category">Carte</a>
             <!-- Add other navigation links as needed -->
         </nav>
     </div>
-
-    <div class="content">
-        <h1>Welcome to Our Restaurant!</h1>
-        <p>At Our Restaurant, we pride ourselves on offering a delightful dining experience that combines exquisite cuisine with warm hospitality. Whether you're joining us for a casual lunch, a romantic dinner, or a special celebration, our dedicated team is here to ensure your time with us is unforgettable.</p>
-        <p>Our menu features a variety of mouthwatering dishes crafted from the finest ingredients sourced locally and internationally. From succulent steaks to fresh seafood, vibrant salads to decadent desserts, there's something to satisfy every palate.</p>
-        <img src="placeholder1.jpg" alt="Delicious Food" class="restaurant-image">
-        <p>Step into our inviting ambiance, where contemporary design meets rustic charm. Whether you're seated in our cozy dining area, enjoying al fresco dining on our charming patio, or sipping cocktails at our stylish bar, you'll feel right at home.</p>
-        <img src="placeholder2.jpg" alt="Restaurant Interior" class="restaurant-image">
-        <p>Join us for an unforgettable culinary journey and discover why Our Restaurant is the perfect destination for food lovers and discerning diners alike.</p>
-    </div>
     
+    <!-- Display selected date -->
+    <div class="selected-date" id="selected-date"></div>
+    
+    <!-- Calendar widget -->
+    <div class="calendar-widget" id="calendar-widget"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarWidget = document.getElementById('calendar-widget');
+            const selectedDateDisplay = document.getElementById('selected-date');
+            
+            // Function to generate dates for the current week starting from Monday
+            function generateCurrentWeekDates() {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+                const startDate = new Date(today); // Start date of the current week
+                startDate.setDate(today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Adjust to Monday of the current week
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6); // End date of the current week (Sunday)
+                return { startDate, endDate };
+            }
+            
+            // Function to format date as "YYYY-MM-DD"
+            function formatDate(date) {
+                const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                const dayName = days[date.getDay()];
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                return `${dayName} ${day} Mars ${year}`; // French formatting
+            }
+            
+            // Function to update selected date display
+            function updateSelectedDate(date) {
+                selectedDateDisplay.textContent = date;
+            }
+            
+            // Display current date by default
+            const currentDate = new Date();
+            updateSelectedDate(formatDate(currentDate));
+            
+            // Generate dates for the current week
+            const { startDate, endDate } = generateCurrentWeekDates();
+            
+            // Populate calendar widget with current week dates
+            for (let currentDate = new Date(startDate); currentDate <= endDate; currentDate.setDate(currentDate.getDate() + 1)) {
+                const formattedDate = formatDate(currentDate);
+                const dateElement = document.createElement('div');
+                dateElement.classList.add('calendar-date');
+                dateElement.textContent = formattedDate;
+                dateElement.addEventListener('click', function() {
+                    handleDateSelection(formattedDate);
+                });
+                calendarWidget.appendChild(dateElement);
+            }
+            
+            // Handle date selection
+            function handleDateSelection(selectedDate) {
+                updateSelectedDate(selectedDate);
+            }
+        });
+    </script>
 </body>
 </html>
